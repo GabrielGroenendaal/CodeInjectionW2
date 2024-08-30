@@ -3,7 +3,7 @@
 
 extern "C"
 {
-    
+
     const int normalTypeChart[18][18] = {
         {4, 4, 4, 4, 4, 2, 4, 0, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4},
         {8, 4, 2, 2, 4, 8, 2, 0, 8, 4, 4, 4, 4, 2, 8, 4, 8, 2},
@@ -84,6 +84,22 @@ extern "C"
         {4, 2, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 4, 8, 4, 4, 2, 2},
         {4, 8, 4, 2, 4, 4, 4, 4, 2, 2, 4, 4, 4, 4, 4, 8, 8, 4}};
 
+    bool PersonalCheckIfMoveCondition(BattleMon *a1, MoveCondition a2)
+    {
+        if (a1->HeldItem == 289 && a2 == CONDITION_TAUNT)
+        {
+            return true;
+        }
+        else if (a2 == CONDITION_BLOCK && ((a1->Conditions[CONDITION_CURSE] & 7) != 0))
+        {
+            return true;
+        }
+        else
+        {
+            return (a1->Conditions[a2] & 7) != 0;
+        }
+    }
+
     void CreateSpikes(
         int a1,
         ServerFlow *a2,
@@ -96,23 +112,24 @@ extern "C"
     {
         HandlerParam_AddSideEffect *v10;
 
-        char *bhwork;
+        // char *bhwork;
         v10 = (HandlerParam_AddSideEffect *)BattleHandler_PushWork(a2, EFFECT_ADDSIDEEFFECT, (int)a3);
         v10->effect = a6;
         v10->side = a5;
-        v10->cont = (ConditionData)a7;
+        v10->cont = a7;
 
         // k::Printf("%d", v10);
 
-        bhwork = (char *)v10;
-        BattleHandler_StrSetup((u16 *)&v10->exStr, 1u, a8);
-        BattleHandler_AddArg((u16 *)&v10->exStr, a5);
-        BattleHandler_PopWork(a2, (u32 *)bhwork);
+        // bhwork = (char *)v10;
+        BattleHandler_StrSetup(&v10->exStr, 1u, a8);
+        BattleHandler_AddArg(&v10->exStr, a5);
+        BattleHandler_PopWork(a2, v10);
     };
 
     int HandleFieldEffects(ServerFlow *a1)
     {
-        char *bhwork;
+
+        HandlerParam_Message *bhwork;
         BattleFieldStatus *FieldStatus; // r0
         TrainerBattleSetup **trainerSetups;
         TrainerBattleSetup *currentTrainer;
@@ -139,40 +156,40 @@ extern "C"
         if (zoneId == 503 || zoneId == 504 || zoneId == 505 || (zoneId >= 255 && zoneId <= 262) || (zoneId >= 160 && zoneId <= 190))
         {
             ServerDisplay_AddCommon(a1->serverCommandQueue, 48, 1, 0, 433, 0, 0);
-            bhwork = BattleHandler_PushWork(a1, 4, 0);
-            BattleHandler_StrSetup((u16 *)bhwork + 2, 1u, 203);
-            BattleHandler_PopWork(a1, (u32 *)bhwork);
+            bhwork = (HandlerParam_Message *)BattleHandler_PushWork(a1, EFFECT_MESSAGE, 0);
+            BattleHandler_StrSetup(&bhwork->str, 1u, 203);
+            BattleHandler_PopWork(a1, bhwork);
             ServerControl_FieldEffectCore(a1, 1, 255, 0);
         }
 
         // Chargestone Cave
         if (zoneId == 607 || zoneId == 195 || zoneId == 196 || zoneId == 197)
         {
-            bhwork = BattleHandler_PushWork(a1, 4, 0);
-            BattleHandler_StrSetup((u16 *)bhwork + 2, 1u, 204);
-            BattleHandler_PopWork(a1, (u32 *)bhwork);
+            bhwork = (HandlerParam_Message *)BattleHandler_PushWork(a1, EFFECT_MESSAGE, 0);
+            BattleHandler_StrSetup(&bhwork->str, 1u, 204);
+            BattleHandler_PopWork(a1, bhwork);
         }
         // Celestial Tower
         else if (zoneId == 339 || zoneId == 338 || zoneId == 340 || zoneId == 341 || zoneId == 462 || (zoneId >= 510 && zoneId <= 514) || (zoneId >= 569 && zoneId <= 572))
         {
-            bhwork = BattleHandler_PushWork(a1, 4, 0);
-            BattleHandler_StrSetup((u16 *)bhwork + 2, 1u, 205);
-            BattleHandler_PopWork(a1, (u32 *)bhwork);
+            bhwork = (HandlerParam_Message *)BattleHandler_PushWork(a1, EFFECT_MESSAGE, 0);
+            BattleHandler_StrSetup(&bhwork->str, 1u, 205);
+            BattleHandler_PopWork(a1, bhwork);
         }
         // Opelucid Gym
         else if (zoneId == 121)
         {
-            bhwork = BattleHandler_PushWork(a1, 4, 0);
-            BattleHandler_StrSetup((u16 *)bhwork + 2, 1u, 206);
-            BattleHandler_PopWork(a1, (u32 *)bhwork);
+            bhwork = (HandlerParam_Message *)BattleHandler_PushWork(a1, EFFECT_MESSAGE, 0);
+            BattleHandler_StrSetup(&bhwork->str, 1u, 206);
+            BattleHandler_PopWork(a1, bhwork);
         }
 
         // Skyla' Gym
         else if (zoneId == 108)
         {
-            bhwork = BattleHandler_PushWork(a1, 4, 0);
-            BattleHandler_StrSetup((u16 *)bhwork + 2, 1u, 207);
-            BattleHandler_PopWork(a1, (u32 *)bhwork);
+            bhwork = (HandlerParam_Message *)BattleHandler_PushWork(a1, EFFECT_MESSAGE, 0);
+            BattleHandler_StrSetup(&bhwork->str, 1u, 207);
+            BattleHandler_PopWork(a1, bhwork);
         }
 
         // PreSet Spikes
@@ -185,12 +202,6 @@ extern "C"
                 CreateSpikes(0, a1, 0, 0, 0, 6, Permanent, 148);
             }
         }
-
-        // if (trainerClass && trainerClass == 192)
-        // {
-        //     ConditionData Permanent = Condition_MakePermanent();
-        //     CreateSpikes(0, a1, 0, 0, 0, 6, Permanent, 148);
-        // }
 
         // Overworld Weather Setter
         if (zoneId == 537 || zoneId == 538 || zoneId == 539 || zoneId == 540 || zoneId == 541 || zoneId == 542 || zoneId == 461 || zoneId == 376 || zoneId == 589)
@@ -226,7 +237,6 @@ extern "C"
 
         ServerCommandQueue = a1->serverCommandQueue;
         ServerCommandQueue->writePtr = 0;
-        v12 = 0;
         ServerCommandQueue->readPtr = 0;
         v12 = HandleFieldEffects(a1);
 
@@ -270,14 +280,14 @@ extern "C"
         return v12;
     }
 
-    int checkSkylaGym(BattleMon *a1)
+    int checkSkylaGym(ServerFlow *a1, int a2)
     {
         PlayerState *playerState;
         int zoneId;
 
         playerState = GameData_GetPlayerState(*(GameData **)(g_GameBeaconSys + 4));
         zoneId = PlayerState_GetZoneID(playerState);
-        if (zoneId == 108 && BattleMon_HasType(a1, TYPE_FLYING))
+        if (zoneId == 108 && Handler_CheckFloating(a1, a2))
         {
             return 6144;
         }
@@ -287,7 +297,7 @@ extern "C"
         }
     }
 
-    int THUMB_BRANCH_ServerEvent_CalculateSpeed(ServerFlow *a1, BattleMon *a2, bool IsTrickRoomEnabled)
+    int THUMB_BRANCH_SAFESTACK_ServerEvent_CalculateSpeed(ServerFlow *a1, BattleMon *a2, bool IsTrickRoomEnabled)
     {
         int Value;
         int ID;
@@ -297,11 +307,10 @@ extern "C"
         int v9;
         unsigned int v10;
 
-        int mulValue = checkSkylaGym(a2);
-
         Value = BattleMon_GetValue(a2, VALUE_SPEED_STAT);
         BattleEventVar_Push();
         ID = BattleMon_GetID(a2);
+        int mulValue = checkSkylaGym(a1, ID);
         BattleEventVar_SetConstValue(VAR_MON_ID, ID);
         BattleEventVar_SetConstValue(VAR_SPEED, Value);
         BattleEventVar_SetValue(VAR_GENERAL_USE_FLAG, 1);
@@ -321,7 +330,7 @@ extern "C"
 
         // v10 = checkSkylaGym(a1, a2, v10);
 
-        if (BattleMon_CheckIfMoveCondition(a2, CONDITION_PARALYSIS) && BattleEventVar_GetValue(VAR_GENERAL_USE_FLAG))
+        if (PersonalCheckIfMoveCondition(a2, CONDITION_PARALYSIS) && BattleEventVar_GetValue(VAR_GENERAL_USE_FLAG))
         {
             v10 = fixed_round(v8, 1024);
         }
@@ -396,17 +405,18 @@ extern "C"
         {
 
             RealStat = BattleMon_GetValue(AttackingMon, v8);
-
-            if (v8 == VALUE_DEFENSE_STAGE && BattleMon_HasType(AttackingMon, TYPE_ICE) && ServerEvent_GetWeather(a1) == 3)
-            {
-                RealStat = (unsigned __int16)fixed_round(RealStat, 6144);
-            }
         }
+
+        if (v8 == VALUE_DEFENSE_STAGE && BattleMon_HasType(AttackingMon, TYPE_ICE) && ServerEvent_GetWeather(a1) == 3)
+        {
+            RealStat = (unsigned __int16)fixed_round(RealStat, 6144);
+        }
+
         v13 = RealStat;
 
-        BattleEventVar_SetConstValue(VAR_MOVEID, a4->MoveID);
-        BattleEventVar_SetConstValue(VAR_MOVETYPE, a4->moveType);
-        BattleEventVar_SetConstValue(VAR_MOVECATEGORY, a4->category);
+        BattleEventVar_SetConstValue(VAR_MOVE_ID, a4->MoveID);
+        BattleEventVar_SetConstValue(VAR_MOVE_TYPE, a4->moveType);
+        BattleEventVar_SetConstValue(VAR_MOVE_CATEGORY, a4->category);
         BattleEventVar_SetValue(VAR_POWER, v13);
         BattleEventVar_SetMulValue(VAR_RATIO, 4096, 410, 0x20000);
         BattleEvent_CallHandlers(a1, BattleEvent_AttackerPower);
@@ -419,9 +429,9 @@ extern "C"
         return v16;
     }
 
-    int THUMB_BRANCH_SAFESTACK_ServerEvent_GetTargetDefenses(ServerFlow *a1, BattleMon *a2, BattleMon *a3, MoveParam *a4, int *a5)
+    int THUMB_BRANCH_SAFESTACK_ServerEvent_GetTargetDefenses(ServerFlow *a1, BattleMon *a2, BattleMon *a3, MoveParam *a4, int a5)
     {
-        int v7;                    // r4
+        BattleMonValue v7;                    // r4
         int ID;                    // r0
         int v9;                    // r0
         int v10;                   // r0
@@ -435,10 +445,10 @@ extern "C"
         int category;              // [sp+8h] [bp-18h]
         BattleEventVar checkVar;
 
-        v7 = 11;
+        v7 = VALUE_SPECIAL_DEFENSE_STAT;
         if (PML_MoveGetCategory(a4->MoveID) != 2)
         {
-            v7 = 9;
+            v7 = VALUE_DEFENSE_STAT;
         }
         category = a4->category;
         BattleEventVar_Push();
@@ -452,15 +462,15 @@ extern "C"
         BattleEvent_CallHandlers(a1, BattleEvent_BeforeDefenderGuard);
         if ((BattleEventVar_GetValue(VAR_BATTLE_MON_STAT_SWAP_FLAG) & 1) != 0 || a4->MoveID == 473 || a4->MoveID == 540)
         {
-            if (v7 == 9)
+            if (v7 == VALUE_DEFENSE_STAT)
             {
-                v7 = 11;
+                v7 = VALUE_SPECIAL_DEFENSE_STAT;
             }
             else
             {
-                v7 = 9;
+                v7 = VALUE_DEFENSE_STAT;
             }
-            if (v7 == 9)
+            if (v7 == VALUE_DEFENSE_STAT)
             {
                 v10 = 1;
             }
@@ -470,28 +480,30 @@ extern "C"
             }
             category = v10;
         }
-        Value = (unsigned __int8)BattleEventVar_GetValue(VAR_GENERAL_USE_FLAG);
+        Value = BattleEventVar_GetValue(VAR_GENERAL_USE_FLAG);
+
         BattleEventVar_Pop();
         if (Value)
         {
-            RealStat = BattleMon_GetRealStat(a3, (BattleMonValue)v7);
+            RealStat = BattleMon_GetRealStat(a3, v7);
         }
-        else if ((int)a5)
+        else if (a5)
         {
             RealStat = BattleMon_GetStatsForCritDamage(a3, v7);
         }
         else
         {
-            RealStat = BattleMon_GetValue(a3, (BattleMonValue)v7);
+            RealStat = BattleMon_GetValue(a3,v7);
         }
         v13 = RealStat;
-        if (ServerEvent_GetWeather(a1) == 4 && BattleMon_HasType(a3, TYPE_ROCK) && v7 == 11)
+
+        if (ServerEvent_GetWeather(a1) == 4 && BattleMon_HasType(a3, TYPE_ROCK) && v7 == VALUE_SPECIAL_DEFENSE_STAT)
         {
-            v13 = (unsigned __int16)fixed_round(v13, 6144);
+            v13 = fixed_round(v13, 6144);
         }
-        if (ServerEvent_GetWeather(a1) == 3 && BattleMon_HasType(a3, TYPE_ICE) && v7 == 9)
+        if (ServerEvent_GetWeather(a1) == 3 && BattleMon_HasType(a3, TYPE_ICE) && v7 == VALUE_DEFENSE_STAT)
         {
-            v13 = (unsigned __int16)fixed_round(v13, 6144);
+            v13 = fixed_round(v13, 6144);
         }
 
         BattleEventVar_Push();
@@ -499,17 +511,17 @@ extern "C"
         BattleEventVar_SetConstValue(VAR_ATTACKING_MON, v14);
         v15 = BattleMon_GetID(a3);
         BattleEventVar_SetConstValue(VAR_DEFENDING_MON, v15);
-        BattleEventVar_SetConstValue(VAR_MOVEID, a4->MoveID);
-        BattleEventVar_SetConstValue(VAR_MOVETYPE, a4->moveType);
-        BattleEventVar_SetConstValue(VAR_MOVECATEGORY, category);
-        BattleEventVar_SetValue((BattleEventVar)(VAR_MOVEPOWER | VAR_DEFENDING_MON), v13);
+        BattleEventVar_SetConstValue(VAR_MOVE_ID, a4->MoveID);
+        BattleEventVar_SetConstValue(VAR_MOVE_TYPE, a4->moveType);
+        BattleEventVar_SetConstValue(VAR_MOVE_CATEGORY, category);
+        BattleEventVar_SetValue(VAR_GUARD, v13);
         BattleEventVar_SetMulValue(VAR_RATIO, 4096, 410, 0x20000);
         BattleEvent_CallHandlers(a1, BattleEvent_DefenderGuard);
-        v16 = (unsigned __int16)BattleEventVar_GetValue((BattleEventVar)(VAR_MOVEPOWER | VAR_DEFENDING_MON));
+        v16 = BattleEventVar_GetValue(VAR_GUARD);
         v17 = BattleEventVar_GetValue(VAR_RATIO);
         BattleEventVar_Pop();
 
-        return (unsigned __int16)fixed_round(v16, v17);
+        return fixed_round(v16, v17);
     }
 
     TypeEffectiveness THUMB_BRANCH_GetTypeEffectiveness(int a1, int a2)

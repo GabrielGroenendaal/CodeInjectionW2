@@ -269,6 +269,22 @@ extern "C"
         return result;
     }
 
+    bool PersonalCheckIfMoveCondition(BattleMon *a1, MoveCondition a2)
+    {
+        if (a1->HeldItem == 289 && a2 == CONDITION_TAUNT)
+        {
+            return true;
+        }
+        else if (a2 == CONDITION_BLOCK && ((a1->Conditions[CONDITION_CURSE] & 7) != 0)){
+            return true;
+        }
+        else
+        {
+            return (a1->Conditions[a2] & 7) != 0;
+        }
+    }
+
+
     TypeEffectiveness THUMB_BRANCH_SAFESTACK_ServerEvent_CheckDamageEffectiveness(
         ServerFlow *a1,
         BattleMon *a2,
@@ -289,10 +305,11 @@ extern "C"
         v9 = BattleMon_GetID(a3);
         BattleEventVar_SetConstValue(VAR_DEFENDING_MON, v9);
         BattleEventVar_SetConstValue(VAR_POKE_TYPE, a5);
-        BattleEventVar_SetConstValue(VAR_MOVETYPE, a4);
+        BattleEventVar_SetConstValue(VAR_MOVE_TYPE, a4);
         BattleEventVar_SetRewriteOnceValue(VAR_NO_TYPE_EFFECTIVENESS, 0);
         BattleEventVar_SetRewriteOnceValue(VAR_SET_TYPE_EFFECTIVENESS, 0);
-        j_j_BTL_SICKEVENT_CheckNotEffectByType(a1, a3);
+        // j_j_BTL_SICKEVENT_CheckNotEffectByType(a1, a3);
+        j_j_Condition_CheckUnaffectedByType(a1, a3);
         BattleEvent_CallHandlers(a1, BattleEvent_CheckTypeEffectiveness);
         Value = BattleEventVar_GetValue(VAR_NO_TYPE_EFFECTIVENESS);
         v11 = BattleEventVar_GetValue(VAR_SET_TYPE_EFFECTIVENESS);
@@ -325,7 +342,8 @@ extern "C"
         int turnCount;
         int faintedId;
         int loopCount;
-        record = Handler_GetActionRecord(a2);
+        //record = Handler_GetActionRecord(a2);
+         record = Handler_GetFaintRecord(a2);
 
         turnCount = j_j_DeadRec_GetCount_3(record, 1u);
         loopCount = 0;
@@ -458,7 +476,7 @@ extern "C"
         // k::Print("\nCheck #1");
         if (MoveID == 474)
         {
-            if (BattleMon_CheckIfMoveCondition(DefendingMon, CONDITION_POISON))
+            if (PersonalCheckIfMoveCondition(DefendingMon, CONDITION_POISON))
             {
                 return 8192;
             }
@@ -478,7 +496,7 @@ extern "C"
         {
             if (AttackingMon->HeldItem != 271)
             {
-                return 2048;
+                return 0;
             }
         }
 
@@ -566,7 +584,7 @@ extern "C"
         //  Wake Up Slap and Dream Eater
         if (MoveID == 138 || MoveID == 358)
         {
-            if (BattleMon_CheckIfMoveCondition(DefendingMon, CONDITION_SLEEP))
+            if (PersonalCheckIfMoveCondition(DefendingMon, CONDITION_SLEEP))
             {
                 return 8192;
             }
@@ -596,10 +614,10 @@ extern "C"
             {
                 return 20480;
             }
-            else if (AttackingMon->HeldItem == 543)
-            {
-                return 16384;
-            }
+            // else if (AttackingMon->HeldItem == 543)
+            // {
+            //     return 16384;
+            // }
             else
             {
                 return 8192;
@@ -613,7 +631,7 @@ extern "C"
                 return 8192;
             }
         }
-
+        // Payback, Revenge, and Avalanche
         if (MoveID == 279 || MoveID == 419 || MoveID == 371)
         {
             if (Handler_CalculateSpeed(a1, AttackingMon, 0) < Handler_CalculateSpeed(a1, DefendingMon, 0))
@@ -622,6 +640,7 @@ extern "C"
             }
         }
 
+        // Spit Up
         if (MoveID == 255)
         {
             if (!PML_ItemIsBerry(AttackingMon->HeldItem))
@@ -635,7 +654,7 @@ extern "C"
 
     // SOURCE OF THE CRASH IS THIS FUNCTION //
 
-    int THUMB_BRANCH_Handler_SimulationDamage(ServerFlow *a1, int a2, int a3, int a4)
+    int THUMB_BRANCH_SAFESTACK_Handler_SimulationDamage(ServerFlow *a1, int a2, int a3, int a4)
     {
         int TypeEffectiveness;   // r6
         BattleMon *DefendingMon; // [sp+14h] [bp-34h]
@@ -748,10 +767,7 @@ extern "C"
             }
         }
 
-        // // k::Printf("\n Simulation Counter is: %d \n", *(u32 *)a1 + 0x774);
-        ++*(u32 *)a1 + 0x774;
-        // //++v16;
-        // //++*(int *)*(&a1) + 0x774;
+        ++a1->SimulationCounter;
 
         if (BattleMon_IsIllusionEnabled(DefendingMon))
         {
@@ -813,21 +829,17 @@ extern "C"
             0,
             v15 == 0,
             &v12);
-        --*(u32 *)a1 + 0x774;
+        --a1->SimulationCounter;
 
         return v12;
     }
 
-    // // int THUMB_BRANCH_SimulationEffectivenessCore()
-    // // {
-    // // }
-
-    int THUMB_BRANCH_GuessAbility(TrainerAIEnv *a1, int a2, int a3)
+    int THUMB_BRANCH_SAFESTACK_GuessAbility(TrainerAIEnv *a1, int a2, int a3)
     {
         BattleMon *BattleMonFromBattlePos; // r6
 
         BattleMonFromBattlePos = GetBattleMonFromBattlePos(a1, a3);
-        if (BattleMon_CheckIfMoveCondition(BattleMonFromBattlePos, CONDITION_GASTROACID))
+        if (PersonalCheckIfMoveCondition(BattleMonFromBattlePos, CONDITION_GASTROACID))
         {
             return 0;
         }
@@ -838,10 +850,8 @@ extern "C"
     {
         if (AttackingMon->Ability == 101)
         {
-            // k:Printf("\n Checked For Ability\n", a3);
             if (PML_MoveGetBasePower(MoveID) <= 60)
             {
-                // k:Printf("\n Got the power\n", MoveID, a3);
                 return a3 * 1.5;
             }
         }
@@ -853,6 +863,7 @@ extern "C"
 
         int value;
         value = a4;
+     
 
         // Abilities
         if (AttackingMon->Ability != 1 && AttackingMon->Ability != 2 && AttackingMon->Ability != 3)
@@ -877,19 +888,21 @@ extern "C"
             {
                 return value * .5;
             }
+        } else {
+            return value;
         }
-        return value;
-        // Items
     }
 
     int checkForBPChanges(BattleMon *AttackingMon, BattleMon *DefendingMon, int MoveID, unsigned int a4, BtlClientWk *work)
     {
         unsigned int value;
         value = a4;
+        ServerFlow *server;
+        server = BattleServer_GetServerFlow((BtlServerWk *)work->mainModule->server);
 
         if (MoveID == 474)
         {
-            if (BattleMon_CheckIfMoveCondition(DefendingMon, CONDITION_POISON))
+            if (PersonalCheckIfMoveCondition(DefendingMon, CONDITION_POISON))
             {
                 return value * 2;
             }
@@ -991,7 +1004,7 @@ extern "C"
         // Electro Ball
         else if (MoveID == 486)
         {
-            if (Handler_CalculateSpeed(BattleServer_GetServerFlow((BtlServerWk *)work->mainModule->server), AttackingMon, 0) > Handler_CalculateSpeed(BattleServer_GetServerFlow((BtlServerWk *)work->mainModule->server), DefendingMon, 0))
+            if (Handler_CalculateSpeed(server, AttackingMon, 0) > Handler_CalculateSpeed(server, DefendingMon, 0))
             {
                 return value * 2;
             }
@@ -1004,7 +1017,7 @@ extern "C"
         // Gyro Ball
         if (MoveID == 360)
         {
-            if (Handler_CalculateSpeed(BattleServer_GetServerFlow((BtlServerWk *)work->mainModule->server), AttackingMon, 0) < Handler_CalculateSpeed(BattleServer_GetServerFlow((BtlServerWk *)work->mainModule->server), DefendingMon, 0))
+            if (Handler_CalculateSpeed(server, AttackingMon, 0) < Handler_CalculateSpeed(server, DefendingMon, 0))
             {
                 return value * 2;
             }
@@ -1059,14 +1072,14 @@ extern "C"
         // Wake Up Slap and Dream Eater
         else if (MoveID == 138 || MoveID == 358)
         {
-            if (BattleMon_CheckIfMoveCondition(DefendingMon, CONDITION_SLEEP))
+            if (PersonalCheckIfMoveCondition(DefendingMon, CONDITION_SLEEP))
             {
                 return value * 2;
             }
         }
         if (MoveID == 514)
         {
-            if (checkRetaliate(BattleServer_GetServerFlow((BtlServerWk *)work->mainModule->server), AttackingMon->ID))
+            if (checkRetaliate(server, AttackingMon->ID))
             {
                 // k::Printf("\nWe have triggered this effect for retaliate with switch AI\n");
                 return value * 2;
@@ -1114,7 +1127,7 @@ extern "C"
 
         else if (MoveID == 279 || MoveID == 419 || MoveID == 371)
         {
-            if (Handler_CalculateSpeed(BattleServer_GetServerFlow((BtlServerWk *)work->mainModule->server), AttackingMon, 0) < Handler_CalculateSpeed(BattleServer_GetServerFlow((BtlServerWk *)work->mainModule->server), DefendingMon, 0))
+            if (Handler_CalculateSpeed(server, AttackingMon, 0) < Handler_CalculateSpeed(server, DefendingMon, 0))
             {
                 return value * 2;
             }
@@ -1170,7 +1183,7 @@ extern "C"
 
     // a3 is the number of battle ready mons
     // a4 is the opposing pokemon
-    unsigned int THUMB_BRANCH_PickBestMonToSwitchInto(BtlClientWk *a1, u8 *a2, unsigned int a3, BattleMon *a4)
+    unsigned int THUMB_BRANCH_SAFESTACK_PickBestMonToSwitchInto(BtlClientWk *a1, u8 *a2, unsigned int a3, BattleMon *a4)
     {
         unsigned int v5;                     // r5
         BattleMon *MonData;                  // r6
@@ -1194,7 +1207,7 @@ extern "C"
 
         v24 = a4;
         PokeType = BattleMon_GetPokeType(a4);
-        for (i = 0; i < a3; i = (unsigned __int8)(i + 1))
+        for (i = 0; i < a3; i = (i + 1))
         {
             v5 = 0;
             v23[i] = 0;
@@ -1244,10 +1257,10 @@ extern "C"
                                 }
                                 // k::Printf("\nBase Power from %d is %d, and the Type is %d\n", ID, BasePower, Type);
 
-                                if (BasePower < 0xA)
-                                {
-                                    BasePower = 60;
-                                }
+                                // if (BasePower < 0xA)
+                                // {
+                                //     BasePower = 60;
+                                // }
                                 if (ID == 327 || ID == 357 || MonData->Ability == 7)
                                 {
                                     TypeEffectivenessVsMon = GetTypeEffectivenessVsMonAltered(Type, PokeType);
@@ -1311,14 +1324,14 @@ extern "C"
                                         break;
                                     }
                                 }
-                                if ((unsigned __int16)v23[i] < BasePower)
+                                if (v23[i] < BasePower)
                                 {
                                     // k::Printf("\n Base Power of %d is %d \n", ID, BasePower);
                                     v23[i] = BasePower;
                                 }
                             }
                         }
-                        v5 = (unsigned __int8)(v5 + 1);
+                        v5 = (v5 + 1);
                     } while (v5 < MoveCount);
                 }
             }
@@ -1326,10 +1339,10 @@ extern "C"
         result = a3;
         for (j = 0; j < a3; result = a3)
         {
-            for (k = (unsigned __int8)(j + 1); k < a3; k = (unsigned __int8)(k + 1))
+            for (k = (j + 1); k < a3; k = (k + 1))
             {
-                v14 = (unsigned __int16)v23[k];
-                v15 = (unsigned __int16)v23[j];
+                v14 =v23[k];
+                v15 = v23[j];
                 if (v15 < v14)
                 {
                     v23[j] = v14;
@@ -1344,7 +1357,7 @@ extern "C"
         return result;
     }
 
-    bool THUMB_BRANCH_ShouldSwitchIfChoicedIntoIneffectiveMove(BtlClientWk *a1, BattleMon *a2, BattleMon *a3)
+    bool THUMB_BRANCH_SAFESTACK_ShouldSwitchIfChoicedIntoIneffectiveMove(BtlClientWk *a1, BattleMon *a2, BattleMon *a3)
     {
         ConditionData MoveCondition; // r0
         int Param;                   // r0
@@ -1360,18 +1373,18 @@ extern "C"
         int Type;        // [sp+4h] [bp-24h]
 
         // k::Printf("\n Checking that we're inside the right function\n");
-        if (!BattleMon_CheckIfMoveCondition(a2, CONDITION_CHOICELOCK) && !BattleMon_CheckIfMoveCondition(a2, CONDITION_ENCORE))
+        if (!PersonalCheckIfMoveCondition(a2, CONDITION_CHOICELOCK) && !PersonalCheckIfMoveCondition(a2, CONDITION_ENCORE))
         {
             // k::Printf("\n We outtie\n");
             return 0;
         }
-        // k::Printf("\n Condition_Choicelock = %d\n Condition_Encore = %d\n", BattleMon_CheckIfMoveCondition(a2, CONDITION_CHOICELOCK), BattleMon_CheckIfMoveCondition(a2, CONDITION_ENCORE));
-        if (BattleMon_CheckIfMoveCondition(a2, CONDITION_CHOICELOCK))
+        
+        if (PersonalCheckIfMoveCondition(a2, CONDITION_CHOICELOCK))
         {
             MoveCondition = BattleMon_GetMoveCondition(a2, CONDITION_CHOICELOCK);
             Param = Condition_GetParam(MoveCondition);
         }
-        else if (BattleMon_CheckIfMoveCondition(a2, CONDITION_ENCORE))
+        else if (PersonalCheckIfMoveCondition(a2, CONDITION_ENCORE))
         {
             MoveCondition = BattleMon_GetMoveCondition(a2, CONDITION_ENCORE);
             Param = Condition_GetParam(MoveCondition);
@@ -1445,60 +1458,5 @@ extern "C"
         return 0;
     }
 
-    // // bool THUMB_BRANCH_ShouldSwitchIfTypeAbsorbingAbility(BtlClientWk *a1, BattleMon *a2, BattleMon *a3)
-    // // {
-    // //     char *v3;         // r3 MAPDST
-    // //     __int64 v5;        // kr00_8
-    // //     unsigned int j;    // r4
-    // //     wchar_t *v8;       // r0
-    // //     __int64 v9;        // r0
-    // //     unsigned int v10;  // r2
-    // //     int num2;          // [sp+8h] [bp-40h]
-    // //     unsigned int i;    // [sp+Ch] [bp-3Ch]
-    // //     char v15[2];       // [sp+24h] [bp-24h] BYREF
-    // //     MoveDamageRec v16; // [sp+26h] [bp-22h] BYREF
-    // //     if (DoesMonHaveSuperEffectiveMove(a1, a2, a3, 4))
-    //     {
-    //         v5 = a1->rand3 + a1->rand2 * a1->rand1;
-    //         a1->rand1 = v5;
-    //         if (is_mul_ok(HIDWORD(v5), 3u))
-    //         {
-    //             return 0;
-    //         }
-    //     }
-    //     num2 = 1;
-    //     if (MoveDamageRec_Get(a2, 1u, 0, &v16))
-    //     {
-    //         do
-    //         {
-    //             for (i = 0; i < 4; ++i)
-    //             {
-    //                 if (v16.damageType == LOBYTE(aRw[5 * i]))
-    //                 {
-    //                     for (j = 0; j < 4; ++j)
-    //                     {
-    //                         v8 = &aRw[5 * i + j];
-    //                         if (!v8[1])
-    //                         {
-    //                             break;
-    //                         }
-    //                         if (CheckMonsForTypeAbsorbingAbility(a1, v8[1], v15))
-    //                         {
-    //                             v9 = a1->rand3 + a1->rand2 * a1->rand1;
-    //                             a1->rand1 = v9;
-    //                             if (v9 >= 0)
-    //                             {
-    //                                 *v3 = v15[0];
-    //                                 return 1;
-    //                             }
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //             v10 = num2;
-    //             num2 = (unsigned __int8)(num2 + 1);
-    //         } while (MoveDamageRec_Get(a2, 1u, v10, &v16));
-    //     }
-    //     return 0;
-    // }
+  
 }

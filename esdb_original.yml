@@ -16252,7 +16252,7 @@ Symbols:
   - Name: EffectivenessCounter_GetOpponentNotVeryEffectiveHits
     Segment: 0x5
     Address: 0x21ab869
-  - Name: Handler_GetPokeParam
+  - Name: Handler_GetBattleMon
     Segment: 0x5
     Address: 0x21ab875
   - Name: Handler_GetExistFrontPokePos
@@ -23281,7 +23281,7 @@ Symbols:
   - Name: HandlerWaterPledgeFieldEffect
     Segment: 0x5
     Address: 0x21cdd7d
-  - Name: HandlerCommon_CheckTargetPokeID
+  - Name: HandlerCommon_CheckTargetMonID
     Segment: 0x5
     Address: 0x21cde79
   - Name: IsMonLastInTurnOrder
